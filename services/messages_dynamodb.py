@@ -8,17 +8,26 @@ class MessagesDynamodbService:
     def __init__(self, messages_table):
         self._table = messages_table
 
+
     def get_history(self, identity: str, limit: Optional[int] = None) -> List[Message]:
+
         kwargs: Dict[str, Any] = {
             "KeyConditionExpression": Key("identity").eq(identity),
             "ScanIndexForward": True,
         }
-        if limit is not None:
-            kwargs["Limit"] = limit
+        if limit == 1:
+            kwargs["ScanIndexForward"] = False
+            kwargs["Limit"] = 1
+        else:
+            if limit is not None:
+                kwargs["Limit"] = limit
 
         resp = self._table.query(**kwargs)
         items = resp.get("Items", [])
-        return [self._from_dynamo_item(i) for i in items]
+
+        messages = [self._from_dynamo_item(i) for i in items]
+
+        return messages
 
     def save_message(
         self,

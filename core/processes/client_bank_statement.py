@@ -38,12 +38,16 @@ class ClientBankStatementProcess:
         if state == "PENDING_REQUEST" and event == "TASK_COMPLETED_SEND_INITIAL_REQUEST":
             return "WAITING_CLIENT", []
 
-        if state == "WAITING_CLIENT" and event == "WHATSAPP_FILE_RECEIVED":
-            return "STATEMENT_RECEIVED", [
+        if state == "PENDING_REQUEST" and event == "WHATSAPP_FILE_RECEIVED":
+            return "PENDING_REQUEST", [
                 {
                     "task_type": "PARSE_BANK_STATEMENT_PDF",
                     "agent_type": "ACCOUNTING_JUNIOR",
                     "payload": {"file_id": data["file_id"]},
+                    "debounce_policy": {
+                        "type": "messages_idle",
+                        "min_idle_seconds": 2 * 60,
+                    },
                 }
             ]
 
