@@ -2,7 +2,7 @@ from agents.agent import Agent
 
 
 class AccountingAssistantAgent(Agent):
-    name = "accounting_assistant_agent"
+    name = "ACCOUNTING_ASSISTANT_AGENT"
     required_capabilities = ["llm_chat", "read_messages", "read_sheet_range", "send_message"]
 
     def handle(self, task):
