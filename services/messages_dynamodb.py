@@ -39,9 +39,8 @@ class MessagesDynamodbService:
         content: Dict[str, Any],
         payload: Dict[str, Any],
         msg_id: str = "",
-        timestamp: Optional[datetime] = None,
     ) -> None:
-        ts = timestamp or datetime.utcnow()
+        ts = datetime.utcnow()
         iso_ts = ts.isoformat()
         epoch_ts = int(ts.timestamp())
         message_key = f"{iso_ts}#{direction}#{msg_id}"

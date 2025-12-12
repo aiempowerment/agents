@@ -4,19 +4,27 @@ from datetime import datetime, timezone
 
 import boto3
 
+from core.task_publisher import TaskPublisher
 from services.messages_dynamodb import MessagesDynamodbService
 from services.messages_whatsapp import MessagesWhatsappService
 from integrations.messages import MessagesIntegration
 
+import handler
 
-dynamodb = boto3.resource("dynamodb")
+region_name = os.environ["REGION"]
+
+dynamodb = boto3.resource("dynamodb", region_name=region_name)
 messages_table = dynamodb.Table(os.environ["MESSAGES_TABLE"])
+processes_table = dynamodb.Table(os.environ["PROCESSES_TABLE"])
+
 s3 = boto3.client("s3")
+
+sqs = boto3.client("sqs", region_name=region_name)
+task_publisher = TaskPublisher(sqs, os.environ["TASKS_URL"])
 
 BUCKET = os.environ["WHATSAPP_BUCKET"]
 VERIFY_TOKEN = os.environ["WHATSAPP_VERIFY_TOKEN"]
 
-tenant_id = "alfa"
 tenant_config = {
     "whatsapp": {
         "token": os.environ["WHATSAPP_TOKEN"],
@@ -71,6 +79,9 @@ def handle_webhook(event):
     events = messages_integration.parse_incoming_payload(payload)
 
     for ev in events:
+        identity = ev.get("identity") or ""
+        identity_part = identity.split(":", 1)[-1] if ":" in identity else identity
+
         content = dict(ev.get("content") or {})
 
         if ev.get("message_type") in ["image", "video", "audio", "document"]:
@@ -93,12 +104,7 @@ def handle_webhook(event):
                         download_result = whatsapp_service.download_media(download_url)
                         if download_result.get("status") == "ok":
                             media_bytes = download_result.get("content") or b""
-                            epoch = ev.get("timestamp_epoch")
-                            if epoch is None:
-                                epoch = int(datetime.now(timezone.utc).timestamp())
-
-                            identity = ev.get("identity") or ""
-                            identity_part = identity.split(":", 1)[-1] if ":" in identity else identity
+                            epoch = int(datetime.now(timezone.utc).timestamp())
 
                             media_key = f"whatsapp_media/{identity_part}/{epoch}_{media_id}.{ext}"
 
@@ -118,25 +124,19 @@ def handle_webhook(event):
                 else:
                     print("MEDIA_META_ERROR", media_id, meta_result)
 
-        ts_iso = ev.get("timestamp_iso")
-        ts_dt = None
-        if ts_iso:
-            try:
-                ts_dt = datetime.fromisoformat(ts_iso)
-            except Exception:
-                ts_dt = None
-        if ts_dt is None:
-            ts_dt = datetime.now(timezone.utc)
-
         history_service.save_message(
-            identity=ev.get("identity"),
+            identity=identity,
             direction="in",
             channel="whatsapp",
             message_type=ev.get("message_type"),
             content=content,
             payload=ev.get("raw_payload"),
-            msg_id=ev.get("msg_id"),
-            timestamp=ts_dt,
+            msg_id=ev.get("msg_id")
         )
+
+        try:
+            handler.handler(task_publisher, identity, content)
+        except Exception as e:
+            print("HANDLER_RUNTIME_ERROR:", str(e))
 
     return {"statusCode": 200, "body": "EVENT_RECEIVED"}

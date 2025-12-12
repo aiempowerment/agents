@@ -118,5 +118,4 @@ class MessagesIntegration:
             content={"text": message},
             payload=send_result,
             msg_id=msg_id,
-            timestamp=datetime.utcnow(),
         )

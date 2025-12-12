@@ -26,8 +26,8 @@ class ProcessEngine:
             raise RuntimeError(f"Unknown process_type: {process_type}")
         return process_def
 
-    def _make_process_key(self, tenant_id: str, process_type: str, business_key: str) -> str:
-        return f"{tenant_id}#{process_type}#{business_key}"
+    def _make_process_key(self, process_type: str, business_key: str) -> str:
+        return f"{process_type}#{business_key}"
 
     def _publish_tasks(
         self,
@@ -60,7 +60,6 @@ class ProcessEngine:
     def run(
         self,
         *,
-        tenant_id: str,
         process_type: str,
         event: str,
         context: Dict[str, Any],
@@ -72,7 +71,7 @@ class ProcessEngine:
         else:
             raise RuntimeError(f"Process {process_type} must define build_business_key(context)")
 
-        process_key = self._make_process_key(tenant_id, process_type, business_key)
+        process_key = self._make_process_key(process_type, business_key)
 
         resp = self._table.get_item(
             Key={
@@ -101,7 +100,6 @@ class ProcessEngine:
             Item={
                 "process_key": process_key,
                 "state_key": "CURRENT",
-                "tenant_id": tenant_id,
                 "process_type": process_type,
                 "business_key": business_key,
                 "state": next_state,

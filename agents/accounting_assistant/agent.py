@@ -12,6 +12,8 @@ class AccountingAssistantAgent(Agent):
                 self.send_initial_request(task.context_key)
             if task.task_type=="SE_ADELANTO":
                 print("COMPLETOOOOOO")
+            if task.task_type=="PARSE_BANK_STATEMENT_PDF":
+                print("PARSEEEE")
 
     def send_initial_request(self, task):
         
