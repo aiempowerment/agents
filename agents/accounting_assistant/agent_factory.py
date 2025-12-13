@@ -1,5 +1,5 @@
 from services.messages_dynamodb import MessagesDynamodbService
-from services.messages_print import MessagesPrintService
+from services.messages_whatsapp import MessagesWhatsappService
 from services.sheets_google import SheetsGoogleService
 from services.llm_openai import LlmOpenaiService
 
@@ -20,7 +20,7 @@ class AccountingAssistantAgentFactory:
     def build(tenant_config, messages_table, process_engine):
 
         history_service = MessagesDynamodbService(messages_table)
-        message_service = MessagesPrintService()
+        message_service = MessagesWhatsappService(tenant_config=tenant_config)
         sheets_service = SheetsGoogleService(tenant_config=tenant_config)
         llm_service = LlmOpenaiService(tenant_config=tenant_config)
 

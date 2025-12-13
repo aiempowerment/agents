@@ -46,7 +46,7 @@ class ClientBankStatementProcess:
                     "payload": {"file_id": data["file_id"]},
                     "debounce_policy": {
                         "type": "messages_idle",
-                        "min_idle_seconds": 2 * 60,
+                        "min_idle_seconds": 60,
                     },
                 }
             ]

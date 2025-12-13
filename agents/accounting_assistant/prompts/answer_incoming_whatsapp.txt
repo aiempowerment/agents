@@ -1,0 +1,7 @@
+Este es el historial reciente de la conversación con el cliente:
+
+{{conversation_context}}
+
+Ahora, genera un nuevo mensaje amable para el cliente llamado Nacho,
+mencionando un resumen de sus mensajes.
+El mensaje debe ser breve, claro y cordial.

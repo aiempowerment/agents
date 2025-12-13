@@ -3,7 +3,7 @@ from models.task import Task
 def handler(task_publisher, identity, content, timestamp_iso, timestamp_epoch):
     debounce_policy = {
         "type": "messages_idle",
-        "min_idle_seconds": 2 * 60,
+        "min_idle_seconds": 60,
     }
     task = Task(
         task_type="READ_INCOMING_WHATSAPP_MESSAGE",
