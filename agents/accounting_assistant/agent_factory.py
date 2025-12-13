@@ -19,8 +19,6 @@ class AccountingAssistantAgentFactory:
     @staticmethod
     def build(tenant_config, messages_table, process_engine):
 
-        tenant_id = tenant_config.get("tenant_id")
-
         history_service = MessagesDynamodbService(messages_table)
         message_service = MessagesPrintService()
         sheets_service = SheetsGoogleService(tenant_config=tenant_config)

@@ -1,6 +1,5 @@
 import json
 import os
-from datetime import datetime, timezone
 
 import boto3
 
@@ -81,8 +80,9 @@ def handle_webhook(event):
     for ev in events:
         identity = ev.get("identity") or ""
         identity_part = identity.split(":", 1)[-1] if ":" in identity else identity
-
         content = dict(ev.get("content") or {})
+        timestamp_iso = ev.get("timestamp_iso")
+        timestamp_epoch = ev.get("timestamp_epoch")
 
         if ev.get("message_type") in ["image", "video", "audio", "document"]:
             media_id = content.get("media_id")
@@ -104,9 +104,8 @@ def handle_webhook(event):
                         download_result = whatsapp_service.download_media(download_url)
                         if download_result.get("status") == "ok":
                             media_bytes = download_result.get("content") or b""
-                            epoch = int(datetime.now(timezone.utc).timestamp())
 
-                            media_key = f"whatsapp_media/{identity_part}/{epoch}_{media_id}.{ext}"
+                            media_key = f"whatsapp_media/{identity_part}/{timestamp_epoch}_{media_id}.{ext}"
 
                             s3.put_object(
                                 Bucket=BUCKET,
@@ -129,13 +128,15 @@ def handle_webhook(event):
             direction="in",
             channel="whatsapp",
             message_type=ev.get("message_type"),
+            timestamp_iso=ev.get("timestamp_iso"),
+            timestamp_epoch=timestamp_epoch,
             content=content,
             payload=ev.get("raw_payload"),
             msg_id=ev.get("msg_id")
         )
 
         try:
-            handler.handler(task_publisher, identity, content)
+            handler.handler(task_publisher, identity, content, timestamp_iso, timestamp_epoch)
         except Exception as e:
             print("HANDLER_RUNTIME_ERROR:", str(e))
 

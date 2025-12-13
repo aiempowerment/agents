@@ -1,6 +1,6 @@
 from models.task import Task
 
-def handler(task_publisher, identity, content):
+def handler(task_publisher, identity, content, timestamp_iso, timestamp_epoch):
     debounce_policy = {
         "type": "messages_idle",
         "min_idle_seconds": 2 * 60,
@@ -12,6 +12,8 @@ def handler(task_publisher, identity, content):
         context_key=identity,
         payload=content,
         debounce_policy=debounce_policy,
+        timestamp_iso=timestamp_iso,
+        timestamp_epoch=timestamp_epoch
     )
     task_publisher.publish(task)
     pass

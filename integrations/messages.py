@@ -98,23 +98,29 @@ class MessagesIntegration:
         except:
             return datetime.utcnow().isoformat()
 
-    def _extract_msg_id(self, send_result: dict) -> str:
+    def _extract_msg(self, send_result: dict) -> dict:
         response = send_result.get("response")
         if not isinstance(response, dict):
-            return ""
+            return {}
         messages = response.get("messages") or []
         if not messages:
-            return ""
-        return (messages[0] or {}).get("id", "") or ""
+            return {}
+        return messages[0] or {}
 
     def _save_outgoing_text(self, phone_number: str, message: str, send_result: dict):
-        msg_id = self._extract_msg_id(send_result)
+        msg = self._extract_msg(send_result)
+        msg_id = msg.get("id", "")
+        ts_raw = msg.get("timestamp")
+        ts_epoch = self._to_epoch(ts_raw)
+        ts_iso = self._to_iso(ts_raw)
         identity = f"whatsapp:{self._normalize_phone(phone_number)}"
         self.history_service.save_message(
             identity=identity,
             direction="out",
             channel="whatsapp",
             message_type="text",
+            timestamp_iso=ts_iso,
+            timestamp_epoch=ts_epoch,
             content={"text": message},
             payload=send_result,
             msg_id=msg_id,

@@ -33,7 +33,7 @@ class TaskProcessor:
         self._messages_service = MessagesDynamodbService(messages_table)
 
         self._agent_factories: Dict[str, Any] = {
-            "ACCOUNTING_JUNIOR": AccountingAssistantAgentFactory,
+            "ACCOUNTING_ASSISTANT": AccountingAssistantAgentFactory,
             "HELLO_WORLD": HelloWorldAgentFactory,
         }
 
@@ -49,24 +49,15 @@ class TaskProcessor:
         )
 
     def _evaluate_debounce(self, task: Task) -> int:
-        """
-        Devuelve segundos restantes según debounce_policy.
-        <= 0 -> se puede ejecutar ahora.
-        >  0 -> conviene re-encolar con ese delay.
-        """
         policy = getattr(task, "debounce_policy", None)
-        if not policy:
-            return 0
-
-        policy_type = policy.get("type")
-        if policy_type != "messages_idle":
+        if not policy or policy.get("type") != "messages_idle":
             return 0
 
         min_idle = int(policy.get("min_idle_seconds", 0))
         if min_idle <= 0:
             return 0
 
-        identity = task.context_key.get("identity")
+        identity = task.context_key
         if not identity:
             return 0
 
@@ -74,42 +65,53 @@ class TaskProcessor:
         if not history:
             return 0
 
-        last = history[-1]
+        last_msg = history[-1]
+        last_ts = (
+            last_msg.get("timestamp_epoch")
+            if isinstance(last_msg, dict)
+            else getattr(last_msg, "timestamp_epoch", None)
+        )
 
-        if isinstance(last, dict):
-            last_ts = last.get("timestamp_epoch")
-        else:
-            last_ts = getattr(last, "timestamp_epoch", None)
-
-        if not last_ts:
+        if last_ts is None:
             return 0
+
+        task_ts = getattr(task, "timestamp_epoch", None)
+        if task_ts is None:
+            return 0
+
+        if int(task_ts) < int(last_ts):
+            return -1
 
         now_ts = int(datetime.utcnow().timestamp())
         idle = now_ts - int(last_ts)
         remaining = min_idle - idle
 
+        if remaining <= 0:
+            return 0
+
         return remaining
 
-    def process_raw_body(self, body: str) -> Tuple[bool, int]:
-        """
-        Procesa el body de una task serializada.
-
-        Devuelve:
-        - processed: True si se ejecutó la task, False si debe re-encolarse.
-        - remaining_seconds: segundos a esperar si processed es False.
-        """
+    def process(self, body: str) -> Tuple[bool, int]:
         data = json.loads(body)
+
+        context_key = data.get("context_key") or ""
+        if isinstance(context_key, dict):
+            context_key = context_key.get("identity") or ""
 
         task = Task(
             task_type=data["task_type"],
             agent_type=data["agent_type"],
             process_type=data["process_type"],
-            context_key=data.get("context_key", {}),
+            context_key=context_key,
             payload=data.get("payload", {}),
             debounce_policy=data.get("debounce_policy"),
+            timestamp_iso=data.get("timestamp_iso"),
+            timestamp_epoch=data.get("timestamp_epoch"),
         )
 
         remaining = self._evaluate_debounce(task)
+        if remaining < 0:
+            return False, remaining
         if remaining > 0:
             return False, remaining
 

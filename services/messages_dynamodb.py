@@ -1,6 +1,5 @@
 from boto3.dynamodb.conditions import Key
 from typing import List, Dict, Any, Optional
-from datetime import datetime
 from models.message import Message
 
 
@@ -38,12 +37,11 @@ class MessagesDynamodbService:
         message_type: str,
         content: Dict[str, Any],
         payload: Dict[str, Any],
+        timestamp_iso: str,
+        timestamp_epoch: int,
         msg_id: str = "",
     ) -> None:
-        ts = datetime.utcnow()
-        iso_ts = ts.isoformat()
-        epoch_ts = int(ts.timestamp())
-        message_key = f"{iso_ts}#{direction}#{msg_id}"
+        message_key = f"{timestamp_iso}#{direction}#{msg_id}"
 
         item = {
             "identity": identity,
@@ -51,8 +49,8 @@ class MessagesDynamodbService:
             "channel": channel,
             "direction": direction,
             "message_type": message_type,
-            "timestamp_iso": iso_ts,
-            "timestamp_epoch": epoch_ts,
+            "timestamp_iso": timestamp_iso,
+            "timestamp_epoch": timestamp_epoch,
             "content": content,
             "payload": payload,
         }

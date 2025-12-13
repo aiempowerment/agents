@@ -2,10 +2,14 @@ from agents.agent import Agent
 
 
 class AccountingAssistantAgent(Agent):
-    name = "ACCOUNTING_ASSISTANT_AGENT"
+    name = "ACCOUNTING_ASSISTANT"
     required_capabilities = ["llm_chat", "read_messages", "read_sheet_range", "send_message"]
 
     def handle(self, task):
+
+        if task.process_type=="READ_INCOMING_WHATSAPP_MESSAGE":
+            if task.task_type=="READ_INCOMING_WHATSAPP_MESSAGE":
+                print("MENSAJEEE RECIBIDOOO")
 
         if task.process_type=="CLIENT_BANK_STATEMENT_FOLLOW_UP":
             if task.task_type=="SEND_INITIAL_REQUEST":
