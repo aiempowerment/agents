@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 class AccountingAssistantAgent(Agent):
+
     name = "ACCOUNTING_ASSISTANT"
     required_capabilities = ["llm_chat", "read_messages", "read_sheet_range", "send_message"]
 
@@ -23,10 +24,12 @@ class AccountingAssistantAgent(Agent):
         read_messages = self.capabilities["read_messages"]
         llm_chat = self.capabilities["llm_chat"]
         send_message = self.capabilities["send_message"]
+        get_contact = self.capabilities["get_contact"]
 
         identity = task.context_key
         identity_phone = identity.split(":", 1)[-1]
         history = read_messages(identity)
+        contact = get_contact(identity)
 
         context_builder = ConversationContextBuilder(max_messages=20)
         conversation_context = context_builder.build(history)
@@ -37,7 +40,10 @@ class AccountingAssistantAgent(Agent):
         prompt = prompt_builder.build(
             "answer_incoming_whatsapp.txt",
             {"conversation_context": conversation_context},
+            {"contact": contact},
         )
+
+        return 0
 
         llm_response = llm_chat(
             prompt=prompt,

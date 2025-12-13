@@ -9,7 +9,6 @@ from core.process_registry import ProcessRegistry
 from services.messages_dynamodb import MessagesDynamodbService
 
 from agents.accounting_assistant.agent_factory import AccountingAssistantAgentFactory
-from agents.hello_world.agent_factory import HelloWorldAgentFactory
 
 
 class TaskProcessor:
@@ -18,6 +17,7 @@ class TaskProcessor:
         tenant_config: Dict[str, Any],
         messages_table,
         processes_table,
+        contacts_table,
         task_publisher: Any | None = None,
     ):
         process_definitions = ProcessRegistry.all()
@@ -30,11 +30,11 @@ class TaskProcessor:
 
         self._tenant_config = tenant_config
         self._messages_table = messages_table
+        self._contacts_table = contacts_table
         self._messages_service = MessagesDynamodbService(messages_table)
 
         self._agent_factories: Dict[str, Any] = {
             "ACCOUNTING_ASSISTANT": AccountingAssistantAgentFactory,
-            "HELLO_WORLD": HelloWorldAgentFactory,
         }
 
     def _build_agent(self, task: Task):
@@ -45,6 +45,7 @@ class TaskProcessor:
         return factory.build(
             tenant_config=self._tenant_config,
             messages_table=self._messages_table,
+            contacts_table=self._contacts_table,
             process_engine=self._engine,
         )
 
