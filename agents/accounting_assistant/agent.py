@@ -31,19 +31,15 @@ class AccountingAssistantAgent(Agent):
         history = read_messages(identity)
         contact = get_contact(identity)
 
-        context_builder = ConversationContextBuilder(max_messages=20)
+        context_builder = ConversationContextBuilder(max_messages=10)
         conversation_context = context_builder.build(history)
-
 
         prompt_builder = PromptBuilder(base_dir=Path(__file__).parent / "prompts")
 
         prompt = prompt_builder.build(
-            "answer_incoming_whatsapp.txt",
-            {"conversation_context": conversation_context},
-            {"contact": contact},
+            "answer_incoming_whatsapp",
+            {"conversation_context": conversation_context, "contact": contact}
         )
-
-        return 0
 
         llm_response = llm_chat(
             prompt=prompt,

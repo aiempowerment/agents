@@ -1,10 +1,16 @@
-Este es el historial reciente de la conversación con el cliente:
+Reply to the client message.
+
+Use the conversation history for context.
+Use contact information only if relevant.
 
 {{conversation_context}}
 
-Ahora, genera un nuevo mensaje amable para el cliente:
-
 {{contact}}
 
-mencionando un resumen de sus mensajes.
-El mensaje debe ser breve, claro y cordial.
+Rules:
+- Answer in the client’s language.
+- Be clear and concise.
+- Do not invent information.
+- Ask one short clarification only if needed.
+
+Return only the final message.

@@ -11,7 +11,7 @@ class PromptBuilder:
         return path.read_text(encoding="utf-8")
 
     def build(self, name: str, variables: Dict[str, Any]) -> str:
-        template = self.load(name)
+        template = self.load(name+".txt")
 
         for key, value in variables.items():
             template = template.replace(f"{{{{{key}}}}}", str(value))

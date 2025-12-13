@@ -7,6 +7,7 @@ class ReadMessagesCapability:
         formatted = []
 
         for msg in raw_history:
+            timestamp = msg.timestamp_iso.split("+")[0]
             direction = msg.direction
 
             content = msg.content or {}
@@ -19,6 +20,7 @@ class ReadMessagesCapability:
                 text = "<non-text message>"
 
             formatted.append({
+                "timestamp": timestamp,
                 "direction": direction,
                 "text": text,
             })
