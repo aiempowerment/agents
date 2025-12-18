@@ -2,6 +2,7 @@
 import json
 from datetime import datetime
 from typing import Any, Dict, Tuple
+from dataclasses import asdict
 
 from models.task import Task
 from core.process_engine import ProcessEngine
@@ -18,6 +19,7 @@ class TaskProcessor:
         messages_table,
         processes_table,
         contacts_table,
+        tasks_table,
         task_publisher: Any | None = None,
     ):
         process_definitions = ProcessRegistry.all()
@@ -31,11 +33,29 @@ class TaskProcessor:
         self._tenant_config = tenant_config
         self._messages_table = messages_table
         self._contacts_table = contacts_table
+        self._tasks_table = tasks_table
         self._messages_service = MessagesDynamodbService(messages_table)
 
         self._agent_factories: Dict[str, Any] = {
             "ACCOUNTING_ASSISTANT": AccountingAssistantAgentFactory,
         }
+
+    def _log_task_event(
+        self,
+        task: Any,
+        event: str,
+    ) -> None:
+        if not isinstance(task, dict):
+            task = asdict(task)
+
+        item = dict(task)
+        item.update(
+            {
+                "event_key": f"{event}"
+            }
+        )
+
+        self._tasks_table.put_item(Item=item)
 
     def _build_agent(self, task: Task):
         factory = self._agent_factories.get(task.agent_type)
@@ -58,10 +78,10 @@ class TaskProcessor:
         if min_idle <= 0:
             return 0
 
-        identity = task.context_key
+        identity = task.context_key.get("identity")
         if not identity:
             return 0
-
+        
         history = self._messages_service.get_history(identity, limit=1)
         if not history:
             return 0
@@ -95,15 +115,17 @@ class TaskProcessor:
     def process(self, body: str) -> Tuple[bool, int]:
         data = json.loads(body)
 
-        context_key = data.get("context_key") or ""
-        if isinstance(context_key, dict):
-            context_key = context_key.get("identity") or ""
+        self._log_task_event(
+            data,
+            event="RECEIVED"
+        )
 
         task = Task(
+            task_id=data["task_id"],
             task_type=data["task_type"],
             agent_type=data["agent_type"],
             process_type=data["process_type"],
-            context_key=context_key,
+            context_key=data.get("context_key", {}),
             payload=data.get("payload", {}),
             debounce_policy=data.get("debounce_policy"),
             timestamp_iso=data.get("timestamp_iso"),
@@ -112,11 +134,16 @@ class TaskProcessor:
 
         remaining = self._evaluate_debounce(task)
         if remaining < 0:
+            self._log_task_event(task, event="DISCARDED")
             return False, remaining
         if remaining > 0:
             return False, remaining
 
+        self._log_task_event(task, event="STARTED")
+
         agent = self._build_agent(task)
         agent.handle(task)
+
+        self._log_task_event(task, event="PROCESSED")
 
         return True, 0

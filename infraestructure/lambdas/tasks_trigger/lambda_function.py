@@ -1,4 +1,3 @@
-import json
 from typing import Any, Dict, List
 
 import boto3
@@ -28,6 +27,8 @@ def _init() -> None:
     dynamodb = boto3.resource("dynamodb", region_name=dynamodb_config.get("region"))
     messages_table = dynamodb.Table(dynamodb_config.get("messages_table"))
     processes_table = dynamodb.Table(dynamodb_config.get("processes_table"))
+    contacts_table = dynamodb.Table(dynamodb_config.get("contacts_table"))
+    tasks_table = dynamodb.Table(dynamodb_config.get("tasks_table"))
 
     sqs_config = tenant_config.get("sqs", {}) or {}
     _sqs = boto3.client("sqs", region_name=sqs_config.get("region"))
@@ -48,6 +49,8 @@ def _init() -> None:
         tenant_config=tenant_config,
         messages_table=messages_table,
         processes_table=processes_table,
+        contacts_table=contacts_table,
+        tasks_table=tasks_table,
         task_publisher=task_publisher,
     )
 
@@ -68,6 +71,8 @@ def lambda_handler(event, context):
         body = record.get("body", "")
 
         print(f"RECORD[{i}]: messageId={message_id} body_len={len(body)}")
+    
+        print("BODY:", body)
 
         try:
             processed, remaining = _processor.process(body)

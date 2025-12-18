@@ -12,12 +12,74 @@ class AccountingAssistantAgent(Agent):
     def handle(self, task):
 
         if task.process_type=="READ_INCOMING_WHATSAPP_MESSAGE":
-            if task.task_type=="READ_INCOMING_WHATSAPP_MESSAGE":
+            if task.task_type=="ANSWER_INCOMING_WHATSAPP_MESSAGE":
                 self.answer_incoming_whatsapp_message(task)
+            if task.task_type=="PROCESS_INCOMING_WHATSAPP_DOCUMENT":
+                self.process_incoming_whatsapp_document(task)
+
+        if task.process_type=="PROCESS_INCOMING_WHATSAPP_DOCUMENT":
+            if task.task_type=="DETECT_PDF_ENCRYPTION":
+                self.detect_pdf_encryption(task)
 
         if task.process_type=="CLIENT_BANK_STATEMENT_FOLLOW_UP":
-            if task.task_type=="SEND_INITIAL_REQUEST":
-                self.send_initial_request(task.context_key)
+            if task.task_type=="DETECT_PDF_ENCRYPTION":
+                self.detect_pdf_encryption(task)
+
+    def process_incoming_whatsapp_document(self, task):
+        send_message = self.capabilities["send_message"]
+
+        identity = task.context_key
+        identity_phone = identity.split(":", 1)[-1]
+
+        response = "PROCESS_INCOMING_WHATSAPP_DOCUMENT OK"
+
+        print(response)
+
+        client_id = ctx["client_id"]
+        year = ctx["year"]
+        month = ctx["month"]
+        bank = ctx["bank"]   
+
+        context = {}
+
+        result = self.process_engine.run(
+            process_type="CLIENT_BANK_STATEMENT_FOLLOW_UP",
+            event=event,
+            context=context,
+        )
+
+        return {
+            "phone": identity_phone,
+            "result": result,
+        }
+
+    def detect_pdf_encryption(self, task):
+        send_message = self.capabilities["send_message"]
+
+        identity = task.context_key
+        identity_phone = identity.split(":", 1)[-1]
+
+        response = "DETECT_PDF_ENCRYPTION OK"
+
+        print(response)
+
+        client_id = ctx["client_id"]
+        year = ctx["year"]
+        month = ctx["month"]
+        bank = ctx["bank"]   
+
+        context = {}
+
+        result = self.process_engine.run(
+            process_type="CLIENT_BANK_STATEMENT_FOLLOW_UP",
+            event=event,
+            context=context,
+        )
+
+        return {
+            "phone": identity_phone,
+            "result": result,
+        }
 
     def answer_incoming_whatsapp_message(self, task):
 
@@ -26,7 +88,7 @@ class AccountingAssistantAgent(Agent):
         send_message = self.capabilities["send_message"]
         get_contact = self.capabilities["get_contact"]
 
-        identity = task.context_key
+        identity = task.context_key.get("identity")
         identity_phone = identity.split(":", 1)[-1]
         history = read_messages(identity)
         contact = get_contact(identity)
@@ -55,13 +117,3 @@ class AccountingAssistantAgent(Agent):
             "llm_response": llm_response,
             "send_result": send_result,
         }
-
-    def send_initial_request(self, task):
-        
-        read_sheet_range = self.capabilities["read_sheet_range"]
-
-        clients = read_sheet_range("clients", "A:D", True)
-
-        pending_clients = [c for c in clients if c.get("status") == "pending"]
-
-        return pending_clients

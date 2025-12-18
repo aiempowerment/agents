@@ -24,8 +24,8 @@ class AccountingAssistantAgentFactory:
     def build(tenant_config, messages_table, contacts_table, process_engine):
 
         history_service = MessagesDynamodbService(messages_table)
-        # message_service = MessagesWhatsappService(tenant_config=tenant_config)
-        message_service = MessagesPrintService(tenant_config=tenant_config)
+        message_service = MessagesWhatsappService(tenant_config=tenant_config)
+        # message_service = MessagesPrintService(tenant_config=tenant_config)
         sheets_service = SheetsGoogleService(tenant_config=tenant_config)
         llm_service = LlmOpenaiService(tenant_config=tenant_config)
         contact_service = ContactsDynamodbService(contacts_table)

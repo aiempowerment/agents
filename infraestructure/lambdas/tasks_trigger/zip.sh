@@ -1,11 +1,10 @@
 #!/bin/bash
 set -e
 
-TENANT_ID="$1"
-ENV="$2"
+TENANT_ID="${1:?Usage: $0 <tenant_id>}"
 
-if [ -z "$TENANT_ID" ] || [ -z "$ENV" ]; then
-  echo "Usage: ./zip.sh <tenant_id> <env>"
+if [ -z "$TENANT_ID" ] ; then
+  echo "Usage: ./zip.sh <tenant_id>"
   exit 1
 fi
 
@@ -14,7 +13,7 @@ LAMBDA_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 rm -f "$LAMBDA_DIR/$LAMBDA_NAME.zip"
 
-CONFIG_FILE="../../../config/tenants/${TENANT_ID}/${ENV}.yaml"
+CONFIG_FILE="../../../config/tenants/${TENANT_ID}.yaml"
 if [ ! -f "$CONFIG_FILE" ]; then
   echo "Config file not found: $CONFIG_FILE"
   exit 1

@@ -6,7 +6,9 @@ class ReadIncomingWhatsappMessageProcess:
 
     def build_business_key(ctx: dict) -> str:
         identity = ctx["identity"]
-        return identity
+        msg_id = ctx["msg_id"]
+
+        return f"{identity}#{msg_id}"
 
     def apply_transition(state: str, event: str, data: dict) -> tuple[str, list[dict]]:
         if state == "INIT" and event == "WHATSAPP_MESSAGE_RECEIVED":

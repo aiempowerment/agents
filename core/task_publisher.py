@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict
+from typing import Any
 from dataclasses import asdict
 
 
@@ -12,8 +12,6 @@ class TaskPublisher:
         if not isinstance(task, dict):
             task = asdict(task)
 
-        body = json.dumps(task)
-
         policy = task.get("debounce_policy")
         if policy:
             delay = int(policy.get("min_idle_seconds", 0))
@@ -21,7 +19,9 @@ class TaskPublisher:
         else:
             delay = 0
 
-        print(f"📤 Publishing task with delay={delay}s → {task['task_type']}")
+        body = json.dumps(task)
+
+        print(f"📤 Publishing task {task['task_id']} → {task['task_type']} delay={delay}s")
 
         self._client.send_message(
             QueueUrl=self._queue_url,
