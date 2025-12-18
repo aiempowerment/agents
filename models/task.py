@@ -1,6 +1,16 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 import uuid
+from datetime import datetime, timezone
+import time
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _now_epoch() -> int:
+    return int(time.time())
 
 
 @dataclass
@@ -13,5 +23,6 @@ class Task:
     context_key: Dict[str, Any] = field(default_factory=dict)
     payload: Dict[str, Any] = field(default_factory=dict)
     debounce_policy: Optional[Dict[str, Any]] = None
-    timestamp_iso: Optional[str] = None
-    timestamp_epoch: Optional[int] = None
+
+    timestamp_iso: str = field(default_factory=_now_iso)
+    timestamp_epoch: int = field(default_factory=_now_epoch)

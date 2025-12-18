@@ -24,8 +24,6 @@ class ReadIncomingWhatsappMessageProcess:
                 # context_key=context_key,
                 # payload=content,
                 "debounce_policy": debounce_policy,
-                # timestamp_iso=timestamp_iso,
-                # timestamp_epoch=timestamp_epoch
             }
 
             return "MESSAGE_READING", [task]
