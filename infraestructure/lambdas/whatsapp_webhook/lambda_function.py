@@ -1,10 +1,12 @@
 from typing import Any, Dict
+
 import boto3
 import yaml
 import json
 
 import handler
 
+from core.event_processor import EventProcessor
 from core.task_publisher import TaskPublisher
 
 from services.messages_dynamodb import MessagesDynamodbService
@@ -13,77 +15,58 @@ from integrations.messages import MessagesIntegration
 
 
 _sqs = None
+_processor = None
 _queue_url = None
+
+_s3 = None
+_bucket = None
+_verify_token = None
 
 _history_service = None
 _whatsapp_service = None
 _messages_integration = None
-_task_publisher = None
-
-_s3 = None
-_BUCKET = None
-_VERIFY_TOKEN = None
 
 
 def _init() -> None:
-    global _sqs, _queue_url
-    global _history_service, _whatsapp_service, _messages_integration, _task_publisher
-    global _s3, _BUCKET, _VERIFY_TOKEN
+    global _sqs, _processor, _queue_url
+    global _s3, _bucket, _verify_token
+    global _history_service, _whatsapp_service, _messages_integration
 
-    print("INIT: loading tenant_config.yaml")
+    if _processor is not None:
+        return
 
     with open("tenant_config.yaml", "r", encoding="utf-8") as f:
         tenant_config: Dict[str, Any] = yaml.safe_load(f)
 
-    whatsapp_cfg = tenant_config.get("whatsapp", {}) or {}
-    _VERIFY_TOKEN = whatsapp_cfg.get("verify_token")
-
-    s3_cfg = tenant_config.get("s3", {}) or {}
-    _BUCKET = s3_cfg.get("bucket")
-    s3_region = s3_cfg.get("region")
-
-    if _BUCKET:
-        _s3 = boto3.client("s3", region_name=s3_region)
-
-    # DynamoDB
     dynamodb_config = tenant_config.get("dynamodb", {}) or {}
-    dynamodb = boto3.resource(
-        "dynamodb",
-        region_name=dynamodb_config.get("region"),
-    )
+    dynamodb = boto3.resource( "dynamodb", region_name=dynamodb_config.get("region"))
 
     messages_table = dynamodb.Table(dynamodb_config["messages_table"])
     processes_table = dynamodb.Table(dynamodb_config["processes_table"])
-    contacts_table = dynamodb.Table(dynamodb_config["contacts_table"])
-    tasks_table = dynamodb.Table(dynamodb_config["tasks_table"])
 
-    # SQS
     sqs_config = tenant_config.get("sqs", {}) or {}
-    _sqs = boto3.client(
-        "sqs",
-        region_name=sqs_config.get("region"),
+    _sqs = boto3.client("sqs", region_name=sqs_config.get("region"))
+
+    _queue_url = (sqs_config.get("tasks_url"))
+
+    _processor = EventProcessor(
+        processes_table=processes_table,
+        task_publisher=TaskPublisher(_sqs, _queue_url),
     )
 
-    _queue_url = (
-        sqs_config.get("tasks_url")
-        or sqs_config.get("url")
-        or sqs_config.get("queue_url")
-    )
-    if not _queue_url:
-        raise RuntimeError("Missing SQS queue url in tenant config.")
+    print("INIT: processor ready")
 
-    print(f"INIT: queue_url={_queue_url}")
+    whatsapp_config = tenant_config.get("whatsapp", {}) or {}
+    _verify_token = whatsapp_config.get("verify_token")
+
+    s3_config = tenant_config.get("s3", {}) or {}
+    _bucket = s3_config.get("bucket")
+    _s3 = boto3.client("s3", region_name=s3_config.get("region"))
 
     _history_service = MessagesDynamodbService(messages_table)
     _whatsapp_service = MessagesWhatsappService(tenant_config=tenant_config)
     _messages_integration = MessagesIntegration(_history_service, _whatsapp_service)
 
-    _task_publisher = TaskPublisher(
-        client=_sqs,
-        queue_url=_queue_url
-    )
-
-    print("INIT: publisher ready")
 
 
 def lambda_handler(event, context):
@@ -112,14 +95,14 @@ def handle_verification(event):
     token = params.get("hub.verify_token")
     challenge = params.get("hub.challenge")
 
-    if mode == "subscribe" and token == _VERIFY_TOKEN and challenge:
+    if mode == "subscribe" and token == _verify_token and challenge:
         return {"statusCode": 200, "body": challenge}
 
     return {"statusCode": 403, "body": "Forbidden"}
 
 
 def handle_webhook(event):
-    body_raw = event.get("body") or "{}"
+    body_raw = event.get("body")
 
     try:
         payload = json.loads(body_raw)
@@ -160,7 +143,7 @@ def handle_webhook(event):
                             media_key = f"whatsapp_media/{identity_part}/{timestamp_epoch}_{media_id}.{ext}"
 
                             _s3.put_object(
-                                Bucket=_BUCKET,
+                                Bucket=_bucket,
                                 Key=media_key,
                                 Body=media_bytes,
                             )
@@ -188,7 +171,7 @@ def handle_webhook(event):
         )
 
         try:
-            handler.handler(_task_publisher, ev)
+            handler.handler(_processor, ev)
         except Exception as e:
             print("HANDLER_RUNTIME_ERROR:", str(e))
 

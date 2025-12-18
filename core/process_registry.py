@@ -1,4 +1,3 @@
-# core/process_registry.py
 from typing import Any, Dict, Type, Optional
 
 

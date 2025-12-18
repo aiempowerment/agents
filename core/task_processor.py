@@ -1,4 +1,3 @@
-# core/task_processor.py
 import json
 from datetime import datetime
 from typing import Any, Dict, Tuple
@@ -11,6 +10,9 @@ from services.messages_dynamodb import MessagesDynamodbService
 
 from agents.accounting_assistant.agent_factory import AccountingAssistantAgentFactory
 
+from core.processes.process_incoming_whatspp_document import ProcessIncomingWhatsappDocumentProcess
+from core.processes.read_incoming_whatsapp_message import ReadIncomingWhatsappMessageProcess
+
 
 class TaskProcessor:
     def __init__(
@@ -22,6 +24,8 @@ class TaskProcessor:
         tasks_table,
         task_publisher: Any | None = None,
     ):
+        ProcessRegistry.register(ProcessIncomingWhatsappDocumentProcess)
+        ProcessRegistry.register(ReadIncomingWhatsappMessageProcess)
         process_definitions = ProcessRegistry.all()
 
         self._engine = ProcessEngine(

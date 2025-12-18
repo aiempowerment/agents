@@ -18,13 +18,12 @@ def _init() -> None:
     if _processor is not None:
         return
 
-    print("INIT: loading tenant_config.yaml")
-
     with open("tenant_config.yaml", "r", encoding="utf-8") as f:
         tenant_config: Dict[str, Any] = yaml.safe_load(f)
 
     dynamodb_config = tenant_config.get("dynamodb", {}) or {}
     dynamodb = boto3.resource("dynamodb", region_name=dynamodb_config.get("region"))
+
     messages_table = dynamodb.Table(dynamodb_config.get("messages_table"))
     processes_table = dynamodb.Table(dynamodb_config.get("processes_table"))
     contacts_table = dynamodb.Table(dynamodb_config.get("contacts_table"))
@@ -33,17 +32,7 @@ def _init() -> None:
     sqs_config = tenant_config.get("sqs", {}) or {}
     _sqs = boto3.client("sqs", region_name=sqs_config.get("region"))
 
-    _queue_url = (
-        sqs_config.get("tasks_url")
-        or sqs_config.get("url")
-        or sqs_config.get("queue_url")
-    )
-    if not _queue_url:
-        raise RuntimeError("Missing SQS queue url in tenant config.")
-
-    print(f"INIT: queue_url={_queue_url}")
-
-    task_publisher = TaskPublisher(_sqs, _queue_url)
+    _queue_url = (sqs_config.get("tasks_url"))
 
     _processor = TaskProcessor(
         tenant_config=tenant_config,
@@ -51,7 +40,7 @@ def _init() -> None:
         processes_table=processes_table,
         contacts_table=contacts_table,
         tasks_table=tasks_table,
-        task_publisher=task_publisher,
+        task_publisher=TaskPublisher(_sqs, _queue_url),
     )
 
     print("INIT: processor ready")
@@ -72,7 +61,7 @@ def lambda_handler(event, context):
 
         print(f"RECORD[{i}]: messageId={message_id} body_len={len(body)}")
     
-        print("BODY:", body)
+        print(body)
 
         try:
             processed, remaining = _processor.process(body)
