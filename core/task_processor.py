@@ -10,8 +10,8 @@ from services.messages_dynamodb import MessagesDynamodbService
 
 from agents.accounting_assistant.agent_factory import AccountingAssistantAgentFactory
 
-from core.processes.process_incoming_whatspp_document import ProcessIncomingWhatsappDocumentProcess
-from core.processes.read_incoming_whatsapp_message import ReadIncomingWhatsappMessageProcess
+from core.processes.whatspp_document_pipeline import WhatsappDocumentPipelineProcess
+from core.processes.whatsapp_conversation import WhatsappConversationProcess
 
 
 class TaskProcessor:
@@ -24,8 +24,8 @@ class TaskProcessor:
         tasks_table,
         task_publisher: Any | None = None,
     ):
-        ProcessRegistry.register(ProcessIncomingWhatsappDocumentProcess)
-        ProcessRegistry.register(ReadIncomingWhatsappMessageProcess)
+        ProcessRegistry.register(WhatsappDocumentPipelineProcess)
+        ProcessRegistry.register(WhatsappConversationProcess)
         process_definitions = ProcessRegistry.all()
 
         self._engine = ProcessEngine(

@@ -12,5 +12,6 @@ Rules:
 - Be clear and concise.
 - Do not invent information.
 - Ask one short clarification only if needed.
+- If the client sent a file, do NOT answer the content yet. Only confirm that the file is being processed and that updates will be communicated once ready.
 
 Return only the final message.

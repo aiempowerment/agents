@@ -7,22 +7,30 @@ class ReadMessagesCapability:
         formatted = []
 
         for msg in raw_history:
-            timestamp = msg.timestamp_iso.split("+")[0]
+            timestamp = (msg.timestamp_iso or "").split("+")[0]
             direction = msg.direction
 
             content = msg.content or {}
-            text = content.get("text")
+            message_type = getattr(msg, "message_type", None) or content.get("media_type") or "text"
 
-            if isinstance(text, dict):
-                text = text.get("body") or None
+            text = content.get("text", "")
 
             if not text:
-                text = "<non-text message>"
+                if message_type == "document":
+                    filename = content.get("filename") or "archivo"
+                    mime_type = content.get("mime_type") or content.get("mimeType") or ""
+                    text = f"[document] {filename} {mime_type}".strip()
+                else:
+                    text = "<non-text message>"
 
-            formatted.append({
-                "timestamp": timestamp,
-                "direction": direction,
-                "text": text,
-            })
+            formatted.append(
+                {
+                    "timestamp": timestamp,
+                    "direction": direction,
+                    "message_type": message_type,
+                    "text": text,
+                    "content": content,
+                }
+            )
 
         return formatted

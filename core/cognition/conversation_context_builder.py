@@ -11,7 +11,6 @@ class ConversationContextBuilder:
         for msg in history:
             timestamp = msg.get("timestamp")
             direction = msg.get("direction")
-            text = msg.get("text", "")
 
             if direction == "in":
                 speaker = "Cliente"
@@ -20,6 +19,8 @@ class ConversationContextBuilder:
             else:
                 speaker = "Otro"
 
-            history_lines.append(f"{speaker}({timestamp}): {text}")
+            if "text" in msg:
+                text = msg.get("text")
+                history_lines.append(f"{speaker}({timestamp}): {text}")
 
         return "\n".join(history_lines[-self._max_messages:])
