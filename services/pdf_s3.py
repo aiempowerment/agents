@@ -1,7 +1,6 @@
 from pathlib import Path
 import tempfile
-import pikepdf
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
 
 
 class PdfS3Service:
@@ -11,12 +10,10 @@ class PdfS3Service:
         self.bucket = s3_config.get("bucket")
         self.s3 = s3_client
 
+
     def _is_encrypted(self, pdf_path: Path) -> bool:
-        try:
-            with pikepdf.open(pdf_path):
-                return False
-        except pikepdf.PasswordError:
-            return True
+        reader = PdfReader(str(pdf_path))
+        return bool(reader.is_encrypted)
 
     def unlock_pdf(self, key: str, password: str) -> str:
         p = Path(key)
@@ -28,11 +25,19 @@ class PdfS3Service:
 
             self.s3.download_file(self.bucket, key, str(local_in))
 
-            try:
-                with pikepdf.open(local_in, password=password) as pdf:
-                    pdf.save(local_out)
-            except pikepdf.PasswordError:
-                raise ValueError("WRONG_PASSWORD")
+            reader = PdfReader(str(local_in))
+
+            if reader.is_encrypted:
+                ok = reader.decrypt(password)
+                if ok == 0:
+                    raise ValueError("WRONG_PASSWORD")
+
+            writer = PdfWriter()
+            for page in reader.pages:
+                writer.add_page(page)
+
+            with open(local_out, "wb") as f:
+                writer.write(f)
 
             self.s3.upload_file(
                 str(local_out),

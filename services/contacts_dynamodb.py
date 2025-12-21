@@ -35,6 +35,16 @@ class ContactsDynamodbService:
             raise ValueError("PROFILE_NOT_FOUND")
 
         return item
+    
+    def set_password(self, contact_id: str, password: str) -> None:
+
+        self._table.put_item(
+            Item={
+                "pk": f"CONTACT#{contact_id}",
+                "sk": "PASSWORD",
+                "password": password,
+            }
+        )
 
     def get_password(self, contact_id: str) -> Dict[str, Any]:
         resp = self._table.get_item(

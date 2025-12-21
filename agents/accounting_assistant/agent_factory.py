@@ -20,6 +20,7 @@ from core.capabilities.get_contact import GetContactCapability
 from core.capabilities.get_password import GetPasswordCapability
 from core.capabilities.unlock_pdf import UnlockPdfCapability
 from core.capabilities.extract_data_pdf import ExtractDataPdfCapability
+from core.capabilities.set_password import SetPasswordCapability
 
 from agents.accounting_assistant.agent import AccountingAssistantAgent
 
@@ -50,6 +51,7 @@ class AccountingAssistantAgentFactory:
         get_password_capability = GetPasswordCapability(contact_integration)
         unlock_pdf_capability = UnlockPdfCapability(pdf_integration)
         extract_data_pdf_capability = ExtractDataPdfCapability(pdf_integration)
+        set_password_capability = SetPasswordCapability(contact_integration)
 
         capabilities = {
             "read_messages": read_messages_capability,
@@ -60,6 +62,7 @@ class AccountingAssistantAgentFactory:
             "get_password": get_password_capability,
             "unlock_pdf": unlock_pdf_capability,
             "extract_data_pdf": extract_data_pdf_capability,
+            "set_password": set_password_capability,
         }
 
         agent = AccountingAssistantAgent(

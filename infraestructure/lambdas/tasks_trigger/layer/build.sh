@@ -1,21 +1,17 @@
 #!/bin/bash
 set -e
 
-PYTHON_VERSION="3.11"
 LAYER_NAME="aie-agents-tasks"
 
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 LAYER_DIR="$BASE_DIR/layer"
-SITE_PACKAGES="$LAYER_DIR/python/lib/python${PYTHON_VERSION}/site-packages"
 OUT_ZIP="$BASE_DIR/${LAYER_NAME}.zip"
 
 command -v docker >/dev/null 2>&1 || { echo "Docker not found"; exit 1; }
 [ -f "$BASE_DIR/requirements.txt" ] || { echo "requirements.txt not found"; exit 1; }
 
 rm -rf "$LAYER_DIR" "$OUT_ZIP"
-mkdir -p "$SITE_PACKAGES"
-
-echo "📦 Installing dependencies (binary-only) for Lambda Python ${PYTHON_VERSION}"
+mkdir -p "$LAYER_DIR/python"
 
 docker run --rm \
   --platform linux/amd64 \
@@ -24,25 +20,14 @@ docker run --rm \
   public.ecr.aws/lambda/python:3.11 \
   -lc "
     set -e
-    python -m pip install --upgrade pip setuptools wheel
-
-    python -m pip install \
-      --only-binary=:all: \
-      --platform manylinux_2_28_x86_64 \
-      --implementation cp \
-      --python-version 311 \
-      --abi cp311 \
-      -r /var/task/requirements.txt \
-      -t /var/task/layer/python/lib/python${PYTHON_VERSION}/site-packages
-
+    python -m pip install -U pip
+    pip install --only-binary=:all: -r /var/task/requirements.txt -t /var/task/layer/python
     find /var/task/layer -type d -name '__pycache__' -exec rm -rf {} + || true
     find /var/task/layer -type d -name 'tests' -exec rm -rf {} + || true
   "
 
-echo "🗜️  Zipping layer → $OUT_ZIP"
 cd "$LAYER_DIR"
-zip -r "$OUT_ZIP" python \
-  -x "*/__pycache__/*" -x "*.pyc" -x "*.pyo"
-cd - > /dev/null
+zip -r "$OUT_ZIP" python -x "*/__pycache__/*" -x "*.pyc" -x "*.pyo"
+cd - >/dev/null
 
 rm -rf "$LAYER_DIR"

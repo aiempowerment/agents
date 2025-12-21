@@ -22,6 +22,8 @@ class AccountingAssistantAgent(Agent):
 
                 if task.task_type == "VALIDATE_DOCUMENT":
                     self.validate_document(task)
+                if task.task_type == "SET_PASSWORD":
+                    self.set_password(task)
                 if task.task_type == "PDF_UNLOCK":
                     self.pdf_unlock(task)
                 if task.task_type == "EXTRACT_DATA":
@@ -101,13 +103,17 @@ class AccountingAssistantAgent(Agent):
         get_password_capability = self.capabilities["get_password"]
         password = get_password_capability(identity)
 
-        print(1111)
-        print(password)
-
         file_key = f"whatsapp_media/{phone}/{timestamp_epoch}_{document_id}.pdf"
 
         unlock_pdf_capability = self.capabilities["unlock_pdf"]
         unlock_pdf_capability(file_key, password["password"]["password"])
+
+    def set_password(self, task):
+
+        identity = task.payload.get("identity")
+
+        set_password_capability = self.capabilities["set_password"]
+        set_password_capability(identity, "sfdgdfg")
         
 
     def answer_incoming_whatsapp_message(self, task):
