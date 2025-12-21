@@ -22,6 +22,7 @@ class TaskProcessor:
         processes_table,
         contacts_table,
         tasks_table,
+        s3_client,
         task_publisher: Any | None = None,
     ):
         ProcessRegistry.register(WhatsappDocumentPipelineProcess)
@@ -38,6 +39,7 @@ class TaskProcessor:
         self._messages_table = messages_table
         self._contacts_table = contacts_table
         self._tasks_table = tasks_table
+        self._s3_client = s3_client
         self._messages_service = MessagesDynamodbService(messages_table)
 
         self._agent_factories: Dict[str, Any] = {
@@ -71,6 +73,7 @@ class TaskProcessor:
             messages_table=self._messages_table,
             contacts_table=self._contacts_table,
             process_engine=self._engine,
+            s3_client=self._s3_client,
         )
 
     def _evaluate_debounce(self, task: Task) -> int:

@@ -11,5 +11,8 @@ class ContactsIntegration:
     def get_profile(self, contact_id: str) -> Optional[Dict[str, Any]]:
         return self.contacts_service.get_profile(contact_id)
 
+    def get_password(self, contact_id: str) -> Optional[Dict[str, Any]]:
+        return self.contacts_service.get_password(contact_id)
+
     def get_summary_current(self, contact_id: str) -> Optional[Dict[str, Any]]:
         return self.contacts_service.get_summary_current(contact_id)

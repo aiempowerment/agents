@@ -9,35 +9,52 @@ class WhatsappDocumentPipelineProcess:
         return f"{context['msg_id']}#{context['document_id']}"
 
     @staticmethod
-    def apply_transition(state: str, event: str, data: dict) -> tuple[str, list[dict]]:
-        task_type = data.get("task_type")
+    def apply_transition(state: str, event: str, task_type: str, payload: dict) -> tuple[str, list[dict]]:
 
         if state == "INIT" and event == "DOCUMENT_RECEIVED":
             return "VALIDATING", [
                 {
                     "task_type": "VALIDATE_DOCUMENT",
                     "agent_type": "ACCOUNTING_ASSISTANT",
+                    "payload": payload
                 }
             ]
+        
+        if task_type:
 
-        if task_type == "VALIDATE_DOCUMENT" and event == "TASK_SUCCEEDED":
-            return "DETECTING_PDF_ENCRYPTION", [
-                {
-                    "task_type": "DETECT_PDF_ENCRYPTION",
-                    "agent_type": "ACCOUNTING_ASSISTANT",
-                }
-            ]
+            if task_type == "VALIDATE_DOCUMENT" and event == "TASK_SUCCEEDED":
+                return "EXTRACTION_DATA", [
+                    {
+                        "task_type": "EXTRACT_DATA",
+                        "agent_type": "ACCOUNTING_ASSISTANT",
+                        "payload": payload
+                    }
+                ]
 
-        if task_type == "DETECT_PDF_ENCRYPTION" and event == "TASK_SUCCEEDED":
-            return "EXTRACTION_DATA", [
-                {
-                    "task_type": "EXTRACT_DATA",
-                    "agent_type": "ACCOUNTING_ASSISTANT",
-                }
-            ]
+            if task_type == "EXTRACT_DATA" and event == "TASK_FAILED":
+                error_type = payload["error_type"]
 
-        if event == "TASK_FAILED":
-            return "FAILED", []
+                if error_type=="PDF_PROTECTED":
+                    return "PDF_UNLOCKING", [
+                        {
+                            "task_type": "PDF_UNLOCK",
+                            "agent_type": "ACCOUNTING_ASSISTANT",
+                            "payload": payload
+                        }
+                    ]
+
+            if task_type == "PDF_UNLOCK" and event == "TASK_SUCCEEDED":
+
+                return "EXTRACTION_DATA", [
+                    {
+                        "task_type": "EXTRACT_DATA",
+                        "agent_type": "ACCOUNTING_ASSISTANT",
+                        "payload": payload
+                    }
+                ]
+
+            if event == "TASK_FAILED":
+                return "FAILED", []
 
         return state, []
 

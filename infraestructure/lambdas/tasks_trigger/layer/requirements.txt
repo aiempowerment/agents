@@ -1,3 +1,5 @@
-PyYAML
-gspread
-openai
+PyYAML==6.0.3
+gspread==6.2.1
+openai==1.30.1
+pikepdf==10.0.3
+pypdf==5.1.0

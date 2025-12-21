@@ -27,6 +27,7 @@ class EventProcessor:
         self._engine.run(
             process_type=process_type,
             event=event,
+            task_type=None,
             context=context,
             payload=payload
         )

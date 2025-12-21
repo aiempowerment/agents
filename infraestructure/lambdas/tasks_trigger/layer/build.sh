@@ -15,7 +15,7 @@ command -v docker >/dev/null 2>&1 || { echo "Docker not found"; exit 1; }
 rm -rf "$LAYER_DIR" "$OUT_ZIP"
 mkdir -p "$SITE_PACKAGES"
 
-echo "📦 Installing dependencies INSIDE AWS Lambda Python ${PYTHON_VERSION}"
+echo "📦 Installing dependencies (binary-only) for Lambda Python ${PYTHON_VERSION}"
 
 docker run --rm \
   --platform linux/amd64 \
@@ -23,11 +23,19 @@ docker run --rm \
   -v "$BASE_DIR":/var/task \
   public.ecr.aws/lambda/python:3.11 \
   -lc "
-    python -m pip install --upgrade pip &&
+    set -e
+    python -m pip install --upgrade pip setuptools wheel
+
     python -m pip install \
+      --only-binary=:all: \
+      --platform manylinux_2_28_x86_64 \
+      --implementation cp \
+      --python-version 311 \
+      --abi cp311 \
       -r /var/task/requirements.txt \
-      -t /var/task/layer/python/lib/python${PYTHON_VERSION}/site-packages &&
-    find /var/task/layer -type d -name '__pycache__' -exec rm -rf {} + || true &&
+      -t /var/task/layer/python/lib/python${PYTHON_VERSION}/site-packages
+
+    find /var/task/layer -type d -name '__pycache__' -exec rm -rf {} + || true
     find /var/task/layer -type d -name 'tests' -exec rm -rf {} + || true
   "
 

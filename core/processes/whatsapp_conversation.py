@@ -10,7 +10,7 @@ class WhatsappConversationProcess:
         return identity.split(":", 1)[-1]
 
     @staticmethod
-    def apply_transition(state: str, event: str, data: dict) -> tuple[str, list[dict]]:
+    def apply_transition(state: str, event: str, task_type: str, payload: dict) -> tuple[str, list[dict]]:
 
         if event == "WHATSAPP_MESSAGE_RECEIVED":
             task = {

@@ -6,7 +6,7 @@ class ContactsDynamodbService:
     def __init__(self, contacts_table):
         self._table = contacts_table
 
-    def resolve_contact_id(self, identity: str) -> Optional[str]:
+    def resolve_contact_id(self, identity: str) -> str:
         resp = self._table.get_item(
             Key={
                 "pk": f"IDENTITY#{identity}",
@@ -15,26 +15,56 @@ class ContactsDynamodbService:
         )
         item = resp.get("Item")
         if not item:
-            return None
-        return item.get("contact_id")
+            raise ValueError("CONTACT_NOT_FOUND")
 
-    def get_profile(self, contact_id: str) -> Optional[Dict[str, Any]]:
+        contact_id = item.get("contact_id")
+        if not contact_id:
+            raise ValueError("CONTACT_NOT_FOUND")
+
+        return contact_id
+
+    def get_profile(self, contact_id: str) -> Dict[str, Any]:
         resp = self._table.get_item(
             Key={
                 "pk": f"CONTACT#{contact_id}",
                 "sk": "PROFILE",
             }
         )
-        return resp.get("Item")
+        item = resp.get("Item")
+        if not item:
+            raise ValueError("PROFILE_NOT_FOUND")
 
-    def get_summary_current(self, contact_id: str) -> Optional[Dict[str, Any]]:
+        return item
+
+    def get_password(self, contact_id: str) -> Dict[str, Any]:
+        resp = self._table.get_item(
+            Key={
+                "pk": f"CONTACT#{contact_id}",
+                "sk": "PASSWORD",
+            }
+        )
+        item = resp.get("Item")
+        if not item:
+            raise ValueError("PASSWORD_NOT_FOUND")
+
+        password = item.get("password")
+        if not password:
+            raise ValueError("PASSWORD_NOT_FOUND")
+
+        return item
+
+    def get_summary_current(self, contact_id: str) -> Dict[str, Any]:
         resp = self._table.get_item(
             Key={
                 "pk": f"CONTACT#{contact_id}",
                 "sk": "SUMMARY#CURRENT",
             }
         )
-        return resp.get("Item")
+        item = resp.get("Item")
+        if not item:
+            raise ValueError("SUMMARY_NOT_FOUND")
+
+        return item
 
     def list_identities(self, contact_id: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         kwargs: Dict[str, Any] = {

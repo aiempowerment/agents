@@ -62,6 +62,7 @@ class ProcessEngine:
         *,
         process_type: str,
         event: str,
+        task_type: str,
         context: Dict[str, Any],
         payload: Dict[str, Any],
     ) -> Dict[str, Any]:
@@ -93,7 +94,7 @@ class ProcessEngine:
 
         merged_context = {**stored_context, **context}
 
-        next_state, task_defs = process_def.apply_transition(current_state, event, payload)
+        next_state, task_defs = process_def.apply_transition(current_state, event, task_type, payload)
 
         now = datetime.utcnow().isoformat()
 

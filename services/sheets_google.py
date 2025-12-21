@@ -37,11 +37,11 @@ class SheetsGoogleService:
         return self._client
 
     def read_range(self, key: str, range_: str, has_headers: bool = False) -> Dict[str, Any]:
-        spreadsheet_cfg = self._spreadsheets.get(key)
-        if not spreadsheet_cfg:
+        spreadsheet_config = self._spreadsheets.get(key)
+        if not spreadsheet_config:
             raise KeyError(f"Spreadsheets '{key}' not defined in tenant_config.sheets.spreadsheets")
 
-        spreadsheet_id = spreadsheet_cfg["spreadsheet_id"]
+        spreadsheet_id = spreadsheet_config["spreadsheet_id"]
         if not range_:
             raise ValueError(f"No range provided for spreadsheets '{key}'")
 

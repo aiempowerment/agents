@@ -5,7 +5,7 @@ class MessagesPrintService:
     name = "print"
 
     def __init__(self, tenant_config):
-        cfg = {}
+        config = {}
 
     def send_text(self, phone, message: str) -> dict:
         print(f"[PrintService to:{phone}] {message}")

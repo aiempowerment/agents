@@ -1,7 +1,7 @@
 from typing import Dict, Any
 
 
-class GetContactCapability:
+class GetPasswordCapability:
     def __init__(self, contacts_integration):
         self.contacts_integration = contacts_integration
 
@@ -16,16 +16,10 @@ class GetContactCapability:
                 "summary": None,
             }
 
-        profile = self.contacts_integration.get_profile(contact_id)
-        summary_item = self.contacts_integration.get_summary_current(contact_id)
-
-        summary = None
-        if isinstance(summary_item, dict):
-            summary = summary_item.get("summary")
+        password = self.contacts_integration.get_password(contact_id)
 
         return {
             "identity": identity,
             "contact_id": contact_id,
-            "profile": profile,
-            "summary": summary,
+            "password": password,
         }

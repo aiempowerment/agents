@@ -7,9 +7,9 @@ class MessagesWhatsappService:
     name = "whatsapp"
 
     def __init__(self, tenant_config):
-        cfg = tenant_config.get("whatsapp", {})
-        self._token = cfg.get("token")
-        self._number = cfg.get("number")
+        config = tenant_config.get("whatsapp", {})
+        self._token = config.get("token")
+        self._number = config.get("number")
         self._url = f"https://graph.facebook.com/v21.0/{self._number}/messages"
         self._http = urllib3.PoolManager()
 

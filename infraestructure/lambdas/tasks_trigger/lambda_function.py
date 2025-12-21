@@ -34,12 +34,16 @@ def _init() -> None:
 
     _queue_url = (sqs_config.get("tasks_url"))
 
+    s3_config = tenant_config.get("s3", {}) or {}
+    _s3 = boto3.client("s3", region_name=s3_config.get("region"))
+
     _processor = TaskProcessor(
         tenant_config=tenant_config,
         messages_table=messages_table,
         processes_table=processes_table,
         contacts_table=contacts_table,
         tasks_table=tasks_table,
+        s3_client=_s3,
         task_publisher=TaskPublisher(_sqs, _queue_url),
     )
 
