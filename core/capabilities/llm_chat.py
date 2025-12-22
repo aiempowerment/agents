@@ -1,4 +1,5 @@
 from typing import Optional, List, Dict
+import json
 
 
 class LlmChatCapability:
@@ -13,10 +14,16 @@ class LlmChatCapability:
         temperature: float = 0.3,
         max_tokens: Optional[int] = None,
     ) -> str:
-        return self.llm_integration.chat(
+        response = self.llm_integration.chat(
             prompt=prompt,
             system=system,
             context_messages=context_messages,
             temperature=temperature,
             max_tokens=max_tokens,
         )
+        response_json = json.loads(response)
+        response_format = response_json.get("action_payload") or {}
+        response_format["reply_text"] = response_json.get("reply_text")
+        response_format["action"] = response_json.get("action")
+
+        return response_format

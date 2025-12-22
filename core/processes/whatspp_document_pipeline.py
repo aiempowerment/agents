@@ -53,6 +53,31 @@ class WhatsappDocumentPipelineProcess:
                     }
                 ]
 
+            if task_type == "PDF_UNLOCK" and event == "TASK_FAILED":
+
+                error_type = payload["error_type"]
+
+                if error_type=="PASSWORD_NOT_FOUND":
+
+                    payload["message"] = "No cuento con la contraseña. Cual es?"
+                    return "WAITING_PASSWORD", [
+                        {
+                            "task_type": "SEND_WHATSAPP_MESSAGE",
+                            "agent_type": "ACCOUNTING_ASSISTANT",
+                            "payload": payload
+                        }
+                    ]
+                if error_type=="WRONG_PASSWORD":
+
+                    payload["message"] = "La contraseña que tengo es incorrecta. Cual es la correcta?"
+                    return "WAITING_PASSWORD", [
+                        {
+                            "task_type": "SEND_WHATSAPP_MESSAGE",
+                            "agent_type": "ACCOUNTING_ASSISTANT",
+                            "payload": payload
+                        }
+                    ]
+
             if event == "TASK_FAILED":
                 return "FAILED", []
 

@@ -13,18 +13,28 @@ class WhatsappConversationProcess:
     def apply_transition(state: str, event: str, task_type: str, payload: dict) -> tuple[str, list[dict]]:
 
         if event == "WHATSAPP_MESSAGE_RECEIVED":
-            task = {
-                "task_type": "ANSWER_INCOMING_WHATSAPP_MESSAGE",
-                "agent_type": "ACCOUNTING_ASSISTANT",
-                "debounce_policy": {"type": "messages_idle", "min_idle_seconds": 60},
-            }
-            return "WAITING_IDLE", [task]
+            return "WAITING_IDLE", [
+                {
+                    "task_type": "ANSWER_INCOMING_WHATSAPP_MESSAGE",
+                    "agent_type": "ACCOUNTING_ASSISTANT",
+                    "debounce_policy": {"type": "messages_idle", "min_idle_seconds": 60},
+                }
+            ]
 
-        if state == "WAITING_IDLE" and event == "TASK_SUCCEEDED":
-            return "ANSWERED", []
+        if event == "LLM_ACTION_REQUESTED":
+            return "WAITING_ACTION", [
+                {
+                    "task_type": payload["action"],
+                    "agent_type": "ACCOUNTING_ASSISTANT",
+                    "payload": payload
+                }
+            ]
 
         if state == "WAITING_IDLE" and event == "TASK_FAILED":
             return "FAILED", []
+        
+        if state == "WAITING_IDLE" and event == "TASK_SUCCEEDED":
+            return "ANSWERED", []
 
         return state, []
 

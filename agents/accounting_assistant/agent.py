@@ -12,42 +12,46 @@ class AccountingAssistantAgent(Agent):
 
     def handle(self, task):
         payload = task.payload
+        if not isinstance(payload, dict):
+            payload = {"raw_payload": payload}
+
+        event = "TASK_SUCCEEDED"
+        response = None
 
         try:
             if task.process_type == "WHATSAPP_CONVERSATION":
                 if task.task_type == "ANSWER_INCOMING_WHATSAPP_MESSAGE":
-                    self.answer_incoming_whatsapp_message(task)
+                    response = self.answer_incoming_whatsapp_message(task)
+                elif task.task_type == "SET_PASSWORD":
+                    response = self.set_password(task)
 
-            if task.process_type == "WHATSAPP_DOCUMENT_PIPELINE":
+                if isinstance(response, dict) and response.get("action"):
+                    event = "LLM_ACTION_REQUESTED"
+                    payload = response
 
+            elif task.process_type == "WHATSAPP_DOCUMENT_PIPELINE":
                 if task.task_type == "VALIDATE_DOCUMENT":
                     self.validate_document(task)
-                if task.task_type == "SET_PASSWORD":
-                    self.set_password(task)
-                if task.task_type == "PDF_UNLOCK":
+                elif task.task_type == "PDF_UNLOCK":
                     self.pdf_unlock(task)
-                if task.task_type == "EXTRACT_DATA":
+                elif task.task_type == "EXTRACT_DATA":
                     self.extract_data(task)
-
-            #self.process_engine.run(
-             #   process_type=task.process_type,
-              #  event="TASK_SUCCEEDED",
-               # task_type=task.task_type,
-                #context=task.context_key,
-               # payload=payload
-            #)
+                elif task.task_type == "SEND_WHATSAPP_MESSAGE":
+                    response = self.send_whatsapp_message(task)
 
         except Exception as e:
             print(e)
             payload["error_type"] = str(e)
+            payload["error_message"] = type(e).__name__
+            event = "TASK_FAILED"
 
-            self.process_engine.run(
-                process_type=task.process_type,
-                event="TASK_FAILED",
-                task_type=task.task_type,
-                context=task.context_key,
-                payload=payload
-            )
+        self.process_engine.run(
+            process_type=task.process_type,
+            event=event,
+            task_type=task.task_type,
+            context=task.context_key,
+            payload=payload
+        )
 
     def extract_data(self, task):
         phone = task.payload.get("phone")
@@ -91,8 +95,6 @@ class AccountingAssistantAgent(Agent):
             send_message_capability(phone, "El documento debe ser en formato PDF.")
             raise ValueError(f"INVALID_MIME_TYPE")
 
-        send_message_capability(phone, "Muy bien, el documento es un PDF válido.")
-
     def pdf_unlock(self, task):
 
         identity = task.payload.get("identity")
@@ -110,11 +112,13 @@ class AccountingAssistantAgent(Agent):
 
     def set_password(self, task):
 
-        identity = task.payload.get("identity")
+        identity = task.context_key.get("identity")
+        password = task.payload.get("password")
 
         set_password_capability = self.capabilities["set_password"]
-        set_password_capability(identity, "sfdgdfg")
+        set_password_capability(identity, password)
         
+        return True
 
     def answer_incoming_whatsapp_message(self, task):
 
@@ -138,9 +142,24 @@ class AccountingAssistantAgent(Agent):
             {"conversation_context": conversation_context, "contact": contact}
         )
 
+        system = prompt_builder.build("answer_incoming_whatsapp_system")
+
         llm_response = llm_chat_capability(
             prompt=prompt,
-            system="Respondé siempre en español latino, tono profesional y cálido.",
+            system=system,
         )
 
-        send_result = send_message_capability(identity_phone, llm_response)
+        send_result = send_message_capability(identity_phone, llm_response["reply_text"])
+
+        return llm_response
+
+    def send_whatsapp_message(self, task):
+
+        send_message_capability = self.capabilities["send_message"]
+
+        phone = task.payload.get("phone")
+        message = task.payload.get("message")
+
+        send_result = send_message_capability(phone, message)
+
+        return send_result
