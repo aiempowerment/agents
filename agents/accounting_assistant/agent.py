@@ -12,6 +12,8 @@ class AccountingAssistantAgent(Agent):
 
     def handle(self, task):
         payload = task.payload
+
+        ## NACHO: ESTE IF PORQUE???
         if not isinstance(payload, dict):
             payload = {"raw_payload": payload}
 
@@ -24,6 +26,8 @@ class AccountingAssistantAgent(Agent):
                     response = self.answer_incoming_whatsapp_message(task)
                 elif task.task_type == "SET_PASSWORD":
                     response = self.set_password(task)
+                elif task.task_type == "REPROCESS_PENDING_FILES":
+                    response = self.reprocess_pending_files(task)
 
                 if isinstance(response, dict) and response.get("action"):
                     event = "LLM_ACTION_REQUESTED"
@@ -55,10 +59,10 @@ class AccountingAssistantAgent(Agent):
 
     def extract_data(self, task):
         phone = task.payload.get("phone")
-        timestamp_epoch = task.payload.get("timestamp_epoch")
-        document_id = task.payload.get("document_id")
+        msg_id = task.payload.get("msg_id")
+        media_id = task.payload.get("media_id")
 
-        file_key = f"whatsapp_media/{phone}/{timestamp_epoch}_{document_id}.pdf"
+        file_key = f"whatsapp_media/{phone}/{msg_id}_{media_id}.pdf"
 
         extract_data_pdf_capability = self.capabilities["extract_data_pdf"]
         data_pdf = extract_data_pdf_capability(file_key)
@@ -99,13 +103,13 @@ class AccountingAssistantAgent(Agent):
 
         identity = task.payload.get("identity")
         phone = task.payload.get("phone")
-        timestamp_epoch = task.payload.get("timestamp_epoch")
-        document_id = task.payload.get("document_id")
+        msg_id = task.payload.get("msg_id")
+        media_id = task.payload.get("media_id")
 
         get_password_capability = self.capabilities["get_password"]
         password = get_password_capability(identity)
 
-        file_key = f"whatsapp_media/{phone}/{timestamp_epoch}_{document_id}.pdf"
+        file_key = f"whatsapp_media/{phone}/{msg_id}_{media_id}.pdf"
 
         unlock_pdf_capability = self.capabilities["unlock_pdf"]
         unlock_pdf_capability(file_key, password["password"]["password"])
@@ -163,3 +167,33 @@ class AccountingAssistantAgent(Agent):
         send_result = send_message_capability(phone, message)
 
         return send_result
+    
+    def reprocess_pending_files(self, task):
+
+        process_type = "WHATSAPP_DOCUMENT_PIPELINE"
+
+        list_files_capability = self.capabilities["list_files"]
+        get_processes_state_capability = self.capabilities["get_processes_state"]
+
+        identity = task.context_key.get("identity")
+        identity_phone = identity.split(":", 1)[-1]
+        directory = f"whatsapp_media/{identity_phone}/"
+
+        files = list_files_capability(directory, ["pdf"])
+        for file in files:
+            filename = file.split("/")[-1]
+            msg_id, media_id = filename.split("_", 1)
+            media_id = media_id.split(".")[0]
+            business_key = f"{msg_id}#{media_id}"
+            state = get_processes_state_capability(process_type, business_key)
+            ## NACHO: ACA ME QUEDE!!
+            if state == "WAITING_PASSWORD":
+                self.process_engine.run(
+                    process_type=process_type,
+                    event="PASSWORD_CHANGED",
+                    task_type=task.task_type,
+                    context=task.context_key,
+                    payload=task.payload
+                )
+
+        return state

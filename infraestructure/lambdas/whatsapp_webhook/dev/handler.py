@@ -10,17 +10,17 @@ def handler(processor, event):
     timestamp_epoch = event.get("timestamp_epoch")
 
     if message_type == "document":
-        document_id = content.get("media_id")
-        if document_id:
+        media_id = content.get("media_id")
+        if media_id:
             processor.process(
                 process_type="WHATSAPP_DOCUMENT_PIPELINE",
                 event="DOCUMENT_RECEIVED",
-                context={"msg_id": msg_id, "document_id": document_id},
+                context={"identity": identity, "msg_id": msg_id, "media_id": media_id},
                 payload={
                     "identity": identity,
                     "phone": identity_part,
                     "msg_id": msg_id,
-                    "document_id": document_id,
+                    "media_id": media_id,
                     "timestamp_iso": timestamp_iso,
                     "timestamp_epoch": timestamp_epoch,
                     "document": content,

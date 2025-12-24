@@ -116,7 +116,7 @@ def handle_webhook(event):
         identity = ev.get("identity") or ""
         identity_part = identity.split(":", 1)[-1] if ":" in identity else identity
         content = dict(ev.get("content") or {})
-        timestamp_epoch = ev.get("timestamp_epoch")
+        msg_id = ev.get("msg_id")
         message_type = ev.get("message_type")
         ext = "bin"
 
@@ -140,7 +140,7 @@ def handle_webhook(event):
                         if download_result.get("status") == "ok":
                             media_bytes = download_result.get("content") or b""
 
-                            media_key = f"whatsapp_media/{identity_part}/{timestamp_epoch}_{media_id}.{ext}"
+                            media_key = f"whatsapp_media/{identity_part}/{msg_id}_{media_id}.{ext}"
 
                             _s3.put_object(
                                 Bucket=_bucket,
@@ -164,7 +164,7 @@ def handle_webhook(event):
             channel="whatsapp",
             message_type=message_type,
             timestamp_iso=ev.get("timestamp_iso"),
-            timestamp_epoch=timestamp_epoch,
+            timestamp_epoch=ev.get("timestamp_epoch"),
             content=content,
             payload=ev.get("raw_payload"),
             msg_id=ev.get("msg_id")

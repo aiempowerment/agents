@@ -38,6 +38,7 @@ class TaskProcessor:
         self._tenant_config = tenant_config
         self._messages_table = messages_table
         self._contacts_table = contacts_table
+        self._processes_table = processes_table
         self._tasks_table = tasks_table
         self._s3_client = s3_client
         self._messages_service = MessagesDynamodbService(messages_table)
@@ -72,6 +73,7 @@ class TaskProcessor:
             tenant_config=self._tenant_config,
             messages_table=self._messages_table,
             contacts_table=self._contacts_table,
+            processes_table=self._processes_table,
             process_engine=self._engine,
             s3_client=self._s3_client,
         )

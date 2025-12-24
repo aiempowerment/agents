@@ -30,11 +30,19 @@ class WhatsappConversationProcess:
                 }
             ]
 
-        if state == "WAITING_IDLE" and event == "TASK_FAILED":
+        if event == "TASK_FAILED" and state == "WAITING_IDLE":
             return "FAILED", []
         
-        if state == "WAITING_IDLE" and event == "TASK_SUCCEEDED":
+        if event == "TASK_SUCCEEDED" and state == "WAITING_IDLE":
             return "ANSWERED", []
+        
+        if event == "TASK_SUCCEEDED" and state == "WAITING_ACTION" and task_type == "SET_PASSWORD":
+            return "ANSWERED", [
+                {
+                    "task_type": "REPROCESS_PENDING_FILES",
+                    "agent_type": "ACCOUNTING_ASSISTANT"
+                }
+            ]
 
         return state, []
 

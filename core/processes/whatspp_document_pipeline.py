@@ -6,7 +6,7 @@ class WhatsappDocumentPipelineProcess:
 
     @staticmethod
     def build_business_key(context: dict) -> str:
-        return f"{context['msg_id']}#{context['document_id']}"
+        return f"{context['msg_id']}#{context['media_id']}"
 
     @staticmethod
     def apply_transition(state: str, event: str, task_type: str, payload: dict) -> tuple[str, list[dict]]:
@@ -19,6 +19,15 @@ class WhatsappDocumentPipelineProcess:
                     "payload": payload
                 }
             ]
+        
+        if state == "WAITING_PASSWORD" and event == "PASSWORD_CHANGED":
+            return "EXTRACTION_DATA", [
+                    {
+                        "task_type": "EXTRACT_DATA",
+                        "agent_type": "ACCOUNTING_ASSISTANT",
+                        "payload": payload
+                    }
+                ]
         
         if task_type:
 
