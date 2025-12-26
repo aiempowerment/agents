@@ -19,7 +19,6 @@ class AccountingAssistantAgent(Agent):
 
         event = "TASK_SUCCEEDED"
         response = None
-
         try:
             if task.process_type == "WHATSAPP_CONVERSATION":
                 if task.task_type == "ANSWER_INCOMING_WHATSAPP_MESSAGE":
@@ -186,14 +185,21 @@ class AccountingAssistantAgent(Agent):
             media_id = media_id.split(".")[0]
             business_key = f"{msg_id}#{media_id}"
             state = get_processes_state_capability(process_type, business_key)
-            ## NACHO: ACA ME QUEDE!!
-            if state == "WAITING_PASSWORD":
+
+            if state["state"] == "WAITING_PASSWORD":
+                context_key = {
+                    "msg_id": msg_id,
+                    "media_id": media_id
+                }
+                payload = context_key
+                payload["identity"] = identity
+                payload["phone"] = identity_phone
                 self.process_engine.run(
                     process_type=process_type,
                     event="PASSWORD_CHANGED",
                     task_type=task.task_type,
-                    context=task.context_key,
-                    payload=task.payload
+                    context=context_key,
+                    payload=payload
                 )
 
         return state

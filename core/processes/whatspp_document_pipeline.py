@@ -19,8 +19,8 @@ class WhatsappDocumentPipelineProcess:
                     "payload": payload
                 }
             ]
-        
         if state == "WAITING_PASSWORD" and event == "PASSWORD_CHANGED":
+            
             return "EXTRACTION_DATA", [
                     {
                         "task_type": "EXTRACT_DATA",

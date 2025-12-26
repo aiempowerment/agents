@@ -95,7 +95,7 @@ class ProcessEngine:
         merged_context = {**stored_context, **context}
 
         next_state, task_defs = process_def.apply_transition(current_state, event, task_type, payload)
-
+ 
         now = datetime.utcnow().isoformat()
 
         self._table.put_item(
