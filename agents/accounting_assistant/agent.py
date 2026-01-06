@@ -65,17 +65,33 @@ class AccountingAssistantAgent(Agent):
 
         extract_data_pdf_capability = self.capabilities["extract_data_pdf"]
         data_pdf = extract_data_pdf_capability(file_key)
+        llm_chat_capability = self.capabilities["llm_chat"]
 
         parser = BankStatementParser()
         result = parser.parse(data_pdf)
 
         bank = result["bank"]
-        movements = result["movements"]
+        if bank == "UNKNOWN":
+            prompt_builder = PromptBuilder(base_dir=Path(__file__).parent / "prompts")
+
+            prompt = prompt_builder.build(
+                "extract_movements_from_bank_statement",
+                {"data_pdf": data_pdf}
+            )
+
+            system = prompt_builder.build("extract_movements_from_bank_statement")
+
+            movements = llm_chat_capability(
+                prompt=prompt,
+                system=system,
+            )
+        else:
+            movements = result["movements"]
 
         lines = []
 
         for m in movements:
-            lines.append(f"{m.date_op} {m.concept} {m.amount}")
+            lines.append(f"{m['date_op']} {m['concept']} {m['amount']}")
 
         response = "\n".join(lines)
 

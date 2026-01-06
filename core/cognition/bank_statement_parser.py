@@ -1,17 +1,5 @@
 import re
-from dataclasses import dataclass
-from typing import List, Dict, Optional
-
-
-@dataclass
-class Movement:
-    date_op: str
-    date_val: str
-    concept: str
-    amount: str
-    balance: str
-    balance2: Optional[str]
-    details: str
+from typing import List, Dict, Optional, Any
 
 
 class BankStatementParser:
@@ -23,20 +11,20 @@ class BankStatementParser:
 
         return "UNKNOWN"
 
-    def parse(self, text: str) -> Dict:
+    def parse(self, text: str) -> Dict[str, Any]:
         bank = self.detect_bank(text)
 
         if bank == "BBVA":
             movements = self._parse_bbva(text)
         else:
-            raise ValueError("BANK_UNSUPPORTED")
+            movements = []
 
         return {
             "bank": bank,
             "movements": movements
         }
 
-    def _parse_bbva(self, full_text: str) -> List[Movement]:
+    def _parse_bbva(self, full_text: str) -> List[Dict[str, Optional[str]]]:
 
         start = r"Detalle de Movimientos Realizados"
         end = r"Total de Movimientos"
@@ -63,23 +51,16 @@ class BankStatementParser:
 
         lines = movimientos_text.splitlines()
 
-        movements: List[Movement] = []
-        current = None
+        movements: List[Dict[str, Optional[str]]] = []
+        current: Optional[Dict[str, Optional[str]]] = None
         detail_lines: List[str] = []
 
         for line in lines:
             m = header_re.match(line)
             if m:
                 if current is not None:
-                    movements.append(Movement(
-                        date_op=current["date_op"],
-                        date_val=current["date_val"],
-                        concept=current["concept"],
-                        amount=current["amount"],
-                        balance=current["balance"],
-                        balance2=current["balance2"],
-                        details="\n".join(detail_lines).strip()
-                    ))
+                    current["details"] = "\n".join(detail_lines).strip()
+                    movements.append(current)
 
                 current = {
                     "date_op": m.group(1),
@@ -88,6 +69,7 @@ class BankStatementParser:
                     "amount": m.group(4),
                     "balance": m.group(5),
                     "balance2": m.group(6),
+                    "details": "",
                 }
                 detail_lines = []
             else:
@@ -95,14 +77,7 @@ class BankStatementParser:
                     detail_lines.append(line.rstrip())
 
         if current is not None:
-            movements.append(Movement(
-                date_op=current["date_op"],
-                date_val=current["date_val"],
-                concept=current["concept"],
-                amount=current["amount"],
-                balance=current["balance"],
-                balance2=current["balance2"],
-                details="\n".join(detail_lines).strip()
-            ))
+            current["details"] = "\n".join(detail_lines).strip()
+            movements.append(current)
 
         return movements

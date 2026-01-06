@@ -1,0 +1,30 @@
+Tarea:
+A partir del texto plano de un resumen de cuenta bancaria, extraé todos los movimientos bancarios reales (transacciones).
+
+Definición de movimiento:
+Una transacción individual que represente entrada o salida de dinero de la cuenta.
+Excluí saldos iniciales/finales, totales, encabezados y notas.
+
+Salida:
+Un JSON array de objetos con la siguiente estructura exacta:
+
+{
+  "date_op": "YYYY-MM-DD" | null,
+  "concept": string,
+  "amount": number,
+  "currency": string | null,
+  "type": "debit" | "credit",
+  "balance": number | null
+}
+
+Reglas de extracción:
+- Mantené el orden del resumen.
+- `amount` debe ser positivo.
+- `type` es "debit" si el dinero sale, "credit" si entra.
+- Normalizá fechas a formato ISO cuando sea posible.
+- Reconstruí descripciones cortadas usando el contexto inmediato.
+
+Texto del resumen:
+<<<
+{{data_pdf}}
+>>>
