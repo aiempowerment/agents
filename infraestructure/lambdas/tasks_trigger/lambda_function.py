@@ -28,6 +28,7 @@ def _init() -> None:
     processes_table = dynamodb.Table(dynamodb_config.get("processes_table"))
     contacts_table = dynamodb.Table(dynamodb_config.get("contacts_table"))
     tasks_table = dynamodb.Table(dynamodb_config.get("tasks_table"))
+    memory_table = dynamodb.Table(dynamodb_config.get("memory_table"))
 
     sqs_config = tenant_config.get("sqs", {}) or {}
     _sqs = boto3.client("sqs", region_name=sqs_config.get("region"))
@@ -43,6 +44,7 @@ def _init() -> None:
         processes_table=processes_table,
         contacts_table=contacts_table,
         tasks_table=tasks_table,
+        memory_table=memory_table,
         s3_client=_s3,
         task_publisher=TaskPublisher(_sqs, _queue_url),
     )

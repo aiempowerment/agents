@@ -12,6 +12,7 @@ from agents.accounting_assistant.agent_factory import AccountingAssistantAgentFa
 
 from core.processes.whatspp_document_pipeline import WhatsappDocumentPipelineProcess
 from core.processes.whatsapp_conversation import WhatsappConversationProcess
+from core.processes.slack_conversation import SlackConversationProcess
 
 
 class TaskProcessor:
@@ -22,11 +23,13 @@ class TaskProcessor:
         processes_table,
         contacts_table,
         tasks_table,
+        memory_table,
         s3_client,
         task_publisher: Any | None = None,
     ):
         ProcessRegistry.register(WhatsappDocumentPipelineProcess)
         ProcessRegistry.register(WhatsappConversationProcess)
+        ProcessRegistry.register(SlackConversationProcess)
         process_definitions = ProcessRegistry.all()
 
         self._engine = ProcessEngine(
@@ -40,6 +43,7 @@ class TaskProcessor:
         self._contacts_table = contacts_table
         self._processes_table = processes_table
         self._tasks_table = tasks_table
+        self._memory_table = memory_table
         self._s3_client = s3_client
         self._messages_service = MessagesDynamodbService(messages_table)
 
@@ -74,6 +78,7 @@ class TaskProcessor:
             messages_table=self._messages_table,
             contacts_table=self._contacts_table,
             processes_table=self._processes_table,
+            memory_table=self._memory_table,
             process_engine=self._engine,
             s3_client=self._s3_client,
         )

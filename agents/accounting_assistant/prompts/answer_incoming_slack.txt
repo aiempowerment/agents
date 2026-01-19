@@ -1,0 +1,107 @@
+Memoria actual del canal:
+{{memory_state}}
+
+Último mensaje del usuario:
+{{last_message}}
+
+Operaciones permitidas:
+set_charter,
+set_meta,
+set_next_action,
+clear_next_action,
+set_priority,
+archive_priority,
+upsert_blocker,
+archive_blocker,
+upsert_event,
+archive_event,
+add_capture,
+add_closeout
+
+Reglas operativas:
+- Solo actualizá lo que el mensaje justifica explícitamente
+- Podés proponer CERO, UNA o MÁS operaciones
+- Si no hay cambios claros → ops = []
+- Ideas laterales o ruido → add_capture
+- Definiciones concretas → operación correspondiente
+- El orden de ops importa
+- Fechas, entregas o hitos futuros mencionados de forma natural se consideran definición de evento, aunque no se pidan explícitamente
+
+Principio crítico:
+- No tendrás historial de conversación en futuras interacciones. Solo existirán la memoria del canal y el último mensaje.
+- Por lo tanto, si el último mensaje contiene información que sería necesaria para el futuro (para recordar, continuar o ejecutar), debés guardarla en memoria mediante ops.
+- Si no estás seguro de dónde guardarla, guardala como add_capture (mejor capturar que perder).
+
+Formato de salida (OBLIGATORIO, solo JSON):
+{
+  "reply_text": string,
+  "ops": [
+    { "op": "<op>", "data": {} }
+  ]
+}
+
+Ejemplos de formato:
+
+1) Próxima acción:
+{
+  "reply_text": "Perfecto, este es el próximo paso.",
+  "ops": [
+    {
+      "op": "set_next_action",
+      "data": {
+        "title": "Preparar borrador del informe",
+        "body": "Armar estructura inicial"
+      }
+    }
+  ]
+}
+
+2) Evento importante:
+{
+  "reply_text": "Ok, tengo presente la fecha.",
+  "ops": [
+    {
+      "op": "upsert_event",
+      "data": {
+        "title": "Entrega informe X",
+        "valid_from": 1736208000,
+        "valid_until": 1736812800
+      }
+    }
+  ]
+}
+
+3) Idea lateral:
+{
+  "reply_text": "Lo guardo para después.",
+  "ops": [
+    {
+      "op": "add_capture",
+      "data": {
+        "text": "Pensar alternativa para el onboarding"
+      }
+    }
+  ]
+}
+
+4) Sin actualización:
+{
+  "reply_text": "Todo claro. Avanzá tranquilo.",
+  "ops": []
+}
+
+5) Cierre:
+{
+  "reply_text": "Buen cierre por hoy.",
+  "ops": [
+    {
+      "op": "add_closeout",
+      "data": {
+        "summary": "Avancé con la estructura general",
+        "friction": "Faltó claridad en requisitos",
+        "confidence": "medium",
+        "stable": true
+      }
+    }
+  ]
+}

@@ -5,6 +5,7 @@ from core.process_registry import ProcessRegistry
 
 from core.processes.whatspp_document_pipeline import WhatsappDocumentPipelineProcess
 from core.processes.whatsapp_conversation import WhatsappConversationProcess
+from core.processes.slack_conversation import SlackConversationProcess
 
 class EventProcessor:
     def __init__(
@@ -14,6 +15,7 @@ class EventProcessor:
     ):
         ProcessRegistry.register(WhatsappDocumentPipelineProcess)
         ProcessRegistry.register(WhatsappConversationProcess)
+        ProcessRegistry.register(SlackConversationProcess)
         process_definitions = ProcessRegistry.all()
 
         self._engine = ProcessEngine(

@@ -63,18 +63,14 @@ class ContactsDynamodbService:
 
         return item
 
-    def get_summary_current(self, contact_id: str) -> Dict[str, Any]:
+    def get_summary_current(self, contact_id: str) -> Dict[str, Any] | None:
         resp = self._table.get_item(
             Key={
                 "pk": f"CONTACT#{contact_id}",
                 "sk": "SUMMARY#CURRENT",
             }
         )
-        item = resp.get("Item")
-        if not item:
-            raise ValueError("SUMMARY_NOT_FOUND")
-
-        return item
+        return resp.get("Item")
 
     def list_identities(self, contact_id: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         kwargs: Dict[str, Any] = {

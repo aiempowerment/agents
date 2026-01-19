@@ -2,18 +2,18 @@ from agents.agent import Agent
 from core.cognition.prompt_builder import PromptBuilder
 from core.cognition.conversation_context_builder import ConversationContextBuilder
 from core.cognition.bank_statement_parser import BankStatementParser
+from core.cognition.memory_ops_executor import MemoryOpsExecutor
 from pathlib import Path
 
 
 class AccountingAssistantAgent(Agent):
 
     name = "ACCOUNTING_ASSISTANT"
-    required_capabilities = ["llm_chat", "read_messages", "read_sheet_range", "send_message"]
+    required_capabilities = ["llm_chat", "read_messages", "send_message"]
 
     def handle(self, task):
         payload = task.payload
 
-        ## NACHO: ESTE IF PORQUE???
         if not isinstance(payload, dict):
             payload = {"raw_payload": payload}
 
@@ -41,6 +41,10 @@ class AccountingAssistantAgent(Agent):
                     self.extract_data(task)
                 elif task.task_type == "SEND_WHATSAPP_MESSAGE":
                     response = self.send_whatsapp_message(task)
+
+            elif task.process_type == "SLACK_CONVERSATION":
+                if task.task_type == "ANSWER_INCOMING_SLACK_MENTION":
+                    response = self.answer_incoming_slack_mention(task)
 
         except Exception as e:
             print(e)
@@ -219,3 +223,42 @@ class AccountingAssistantAgent(Agent):
                 )
 
         return state
+
+    def answer_incoming_slack_mention(self, task):
+
+        send_message_channel_capability = self.capabilities["send_message_channel"]
+        get_memory_state_capability = self.capabilities["get_memory_state"]
+        update_memory_state_capability = self.capabilities["update_memory_state"]
+        llm_chat_capability = self.capabilities["llm_chat"]
+
+        executor = MemoryOpsExecutor(update_memory_state_capability)
+
+        channel_id = task.payload.get("channel")
+        thread_ts= task.payload.get("thread_ts")
+        content = task.payload.get("content")
+
+        memory_state = get_memory_state_capability(channel_id)
+
+        prompt_builder = PromptBuilder(base_dir=Path(__file__).parent / "prompts")
+
+        prompt = prompt_builder.build(
+            "answer_incoming_slack",
+            {"memory_state": memory_state, "last_message": content}
+        )
+    
+        system = prompt_builder.build("answer_incoming_slack_system")
+
+        llm_response = llm_chat_capability(
+            prompt=prompt,
+            system=system,
+            response_mode="slack"
+        )
+
+        result = executor.execute(
+            channel_id=channel_id,
+            llm_output=llm_response,
+        )
+
+        reply_text = result["reply_text"]
+
+        send_result = send_message_channel_capability(channel_id, reply_text, thread_ts)
